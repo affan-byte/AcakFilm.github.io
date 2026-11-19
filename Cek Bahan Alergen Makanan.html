@@ -1,340 +1,815 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Cek Bahan Alergen Makanan</title>
-<!-- Tambahkan Library Tesseract.js di sini -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<style>
-:root{
-  --bg:#f6f5f2; --card:#ffffff; --text:#1c1a17; --sub:#6b655c;
-  --accent:#b5502e; --accent2:#2f6f5e; --border:#e7e3db;
-  --warn-bg:#fdece4; --warn-text:#8a3418;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#171512; --card:#221f1b; --text:#f2ede6; --sub:#a89f92;
-    --accent:#e2825c; --accent2:#67c2a4; --border:#3a352d;
-    --warn-bg:#3a231c; --warn-text:#f3b79e;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#171512; --card:#221f1b; --text:#f2ede6; --sub:#a89f92;
-  --accent:#e2825c; --accent2:#67c2a4; --border:#3a352d;
-  --warn-bg:#3a231c; --warn-text:#f3b79e;
-}
-html{scroll-padding-top:env(safe-area-inset-top,0px);}
-*{box-sizing:border-box;}
-body{
-  margin:0; background:var(--bg); color:var(--text);
-  font-family:'Segoe UI',Roboto,-apple-system,Helvetica,Arial,sans-serif;
-  min-height:100%;
-}
-.wrap{max-width:760px; margin:0 auto; padding:28px 18px 60px;}
-h1{font-size:1.5rem; margin:0 0 4px;}
-.sub{color:var(--sub); margin:0 0 18px; font-size:.95rem;}
-.tabs{display:flex; gap:8px; margin-bottom:16px;}
-.tab{
-  flex:1; padding:11px; text-align:center; border-radius:10px; cursor:pointer;
-  border:1px solid var(--border); background:var(--card); color:var(--sub); font-weight:600; font-size:.92rem;
-}
-.tab.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-.panel{display:none;}
-.panel.active{display:block;}
-textarea{
-  width:100%; min-height:130px; padding:14px; border-radius:12px;
-  border:1px solid var(--border); background:var(--card); color:var(--text);
-  font-size:1rem; resize:vertical; font-family:inherit;
-}
-textarea:focus{outline:2px solid var(--accent2);}
-.btn{
-  margin-top:12px; padding:12px 22px; border:none; border-radius:10px;
-  background:var(--accent); color:#fff; font-size:1rem; font-weight:600;
-  cursor:pointer;
-}
-.btn:disabled{opacity:.55; cursor:default;}
-.btn:hover:not(:disabled){filter:brightness(1.08);}
-.btn.secondary{background:transparent; color:var(--sub); border:1px solid var(--border); margin-left:8px;}
-.photo-card{margin-bottom:2px;}
-.drop-area{
-  border:2px dashed var(--border); border-radius:14px; padding:36px 20px;
-  text-align:center; background:var(--card); cursor:pointer; transition:border-color .15s;
-}
-.drop-area:hover, .drop-area:focus-visible{border-color:var(--accent2); outline:none;}
-.drop-area .icon{font-size:2rem; display:block; margin-bottom:8px;}
-.drop-area .txt{color:var(--sub); font-size:.92rem; line-height:1.5;}
-.preview-wrap{
-  position:relative; border-radius:14px; overflow:hidden; border:1px solid var(--border);
-  background:var(--card); max-height:340px; display:flex; align-items:center; justify-content:center;
-}
-#preview{display:block; width:100%; max-height:340px; object-fit:contain; background:var(--bg);}
-.remove-btn{
-  position:absolute; top:10px; right:10px; width:32px; height:32px; border-radius:50%;
-  border:none; background:rgba(0,0,0,.55); color:#fff; font-size:1rem; line-height:1;
-  cursor:pointer; display:flex; align-items:center; justify-content:center;
-}
-.remove-btn:hover{background:rgba(0,0,0,.75);}
-.status{margin-top:12px; font-size:.9rem; color:var(--sub);}
-#result{margin-top:26px;}
-.summary{
-  background:var(--card); border:1px solid var(--border); border-radius:14px;
-  padding:18px; margin-bottom:16px;
-}
-.summary h2{margin:0 0 10px; font-size:1.05rem;}
-.chip-row{display:flex; flex-wrap:wrap; gap:8px;}
-.chip{
-  padding:6px 12px; border-radius:999px; font-size:.85rem; font-weight:600;
-  background:var(--warn-bg); color:var(--warn-text); border:1px solid var(--border);
-}
-.ok{color:var(--accent2); font-weight:600;}
-.errtext{color:var(--warn-text); font-weight:600;}
-.warnlist{list-style:none; padding:0; margin:14px 0 0;}
-.warnlist li{
-  padding:10px 12px; border-radius:10px; background:var(--warn-bg); color:var(--warn-text);
-  margin-bottom:8px; font-size:.92rem;
-}
-.textbox{
-  background:var(--card); border:1px solid var(--border); border-radius:14px;
-  padding:18px; line-height:1.7; font-size:.98rem; overflow-x:auto;
-}
-mark{padding:1px 4px; border-radius:5px; font-weight:600; color:#fff;}
-.legend{margin-top:20px; display:flex; flex-wrap:wrap; gap:10px; font-size:.82rem; color:var(--sub);}
-.legend span{display:inline-flex; align-items:center; gap:6px;}
-.dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
-footer{margin-top:30px; font-size:.78rem; color:var(--sub); text-align:center;}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <h1>🥜 Cek Bahan Alergen Makanan</h1>
-  <p class="sub">Tempel komposisi snack, atau foto langsung label kemasannya. Web akan mendeteksi alergen dan bahan buatan.</p>
-
-  <div class="tabs">
-    <div class="tab active" id="tabText" onclick="switchTab('text')">📝 Ketik Teks</div>
-    <div class="tab" id="tabPhoto" onclick="switchTab('photo')">📷 Upload / Foto</div>
-  </div>
-
-  <div class="panel active" id="panelText">
-    <textarea id="input" placeholder="Contoh: Tepung terigu, gula, minyak nabati, susu bubuk, telur, penguat rasa (mononatrium glutamat), pengemulsi lesitin kedelai, pewarna tartrazin CI 19140, pemanis aspartam..."></textarea>
-    <div>
-      <button class="btn" onclick="scanText()">🔍 Scan Komposisi</button>
-      <button class="btn secondary" onclick="clearAll()">Bersihkan</button>
-    </div>
-  </div>
-
-  <div class="panel" id="panelPhoto">
-    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="onPhotoChosen(event)">
-
-    <div class="photo-card">
-      <div class="drop-area" id="dropArea" role="button" tabindex="0" onclick="triggerFileInput()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();triggerFileInput();}">
-        <span class="icon">📷</span>
-        <span class="txt">Ketuk untuk ambil foto atau upload gambar label komposisi</span>
-      </div>
-      <div class="preview-wrap" id="previewWrap" style="display:none;">
-        <img id="preview" alt="Pratinjau foto">
-        <button class="remove-btn" type="button" onclick="resetPhoto()" aria-label="Hapus foto">✕</button>
-      </div>
-    </div>
-
-    <div style="margin-top:12px;">
-      <button class="btn" id="btnProcessPhoto" onclick="processPhoto()" disabled>🔍 Proses Foto</button>
-      <button class="btn secondary" onclick="triggerFileInput()">Pilih Foto Lain</button>
-    </div>
-    <div class="status" id="photoStatus"></div>
-  </div>
-
-  <div id="result"></div>
-  <div class="legend" id="legend"></div>
-  <footer>Alat bantu deteksi berdasarkan kata kunci umum dan pembacaan gambar otomatis — bukan pengganti label resmi atau saran medis. Selalu periksa kemasan asli dan konsultasikan alergi serius ke dokter.</footer>
-</div>
-
-<script>
-const CATEGORIES = [
-  {key:"kacang", label:"Kacang-kacangan", color:"#b5502e",
-   words:["kacang tanah","kacang almond","almond","kacang mete","mete","kacang walnut","walnut","hazelnut","pistachio","kacang kedelai","kacang polong","kacang"],
-   msg:"Mengandung kacang-kacangan — risiko tinggi untuk penderita alergi kacang."},
-  {key:"susu", label:"Produk Susu", color:"#2f6f5e",
-   words:["susu bubuk","susu skim","susu full cream","krimer nabati","whey","kasein","laktosa","keju","mentega","krim","susu"],
-   msg:"Mengandung produk susu (dairy) — perlu diwaspadai oleh penderita intoleransi laktosa atau alergi susu."},
-  {key:"telur", label:"Telur", color:"#c98a1e",
-   words:["telur ayam","putih telur","kuning telur","albumin","ovalbumin","telur"],
-   msg:"Mengandung telur — perlu diwaspadai oleh penderita alergi telur."},
-  {key:"gluten", label:"Gluten/Gandum", color:"#8a5a2b",
-   words:["tepung terigu","gandum utuh","gluten","barley","jelai","malt","gandum"],
-   msg:"Mengandung gluten/gandum — tidak aman untuk penderita celiac atau sensitivitas gluten."},
-  {key:"kedelai", label:"Kedelai", color:"#5a7d2c",
-   words:["lesitin kedelai","kedelai","soya","tahu","tempe"],
-   msg:"Mengandung kedelai (soya) — salah satu pemicu alergi umum."},
-  {key:"seafood", label:"Makanan Laut", color:"#1f6f8b",
-   words:["udang","kepiting","cumi","kerang","tiram","ikan teri","ikan"],
-   msg:"Mengandung bahan makanan laut — risiko alergi seafood."},
-  {key:"wijen", label:"Wijen", color:"#7a5230",
-   words:["wijen","biji wijen"],
-   msg:"Mengandung wijen — salah satu alergen yang cukup sering dilaporkan."},
-  {key:"msg", label:"Penguat Rasa (MSG)", color:"#9c3d54",
-   words:["monosodium glutamat","mononatrium glutamat","msg","penguat rasa"],
-   msg:"Mengandung penguat rasa (MSG) — sebagian orang sensitif terhadap MSG (sakit kepala, mual)."},
-  {key:"pemanis", label:"Pemanis Buatan", color:"#8342a3",
-   words:["aspartam","sakarin","sukralosa","acesulfame","asesulfam","siklamat","pemanis buatan"],
-   msg:"Mengandung pemanis buatan — perlu diwaspadai bagi yang sensitif terhadap pemanis sintetis."},
-  {key:"pewarna", label:"Pewarna Buatan", color:"#c2622f",
-   words:["tartrazin","ci 19140","sunset yellow","ponceau","pewarna buatan","pewarna sintetis"],
-   msg:"Mengandung pewarna buatan — beberapa pewarna sintetis dikaitkan dengan reaksi hiperaktivitas pada anak."},
-  {key:"pengawet", label:"Pengawet", color:"#556b7a",
-   words:["natrium benzoat","kalium sorbat","kalium metabisulfit","sulfit","bha","bht","pengawet"],
-   msg:"Mengandung bahan pengawet buatan."}
-];
-
-function escapeHtml(s){
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-function buildLegend(){
-  document.getElementById('legend').innerHTML = CATEGORIES.map(c =>
-    `<span><span class="dot" style="background:${c.color}"></span>${c.label}</span>`
-  ).join("");
-}
-buildLegend();
-
-function switchTab(which){
-  document.getElementById('tabText').classList.toggle('active', which==='text');
-  document.getElementById('tabPhoto').classList.toggle('active', which==='photo');
-  document.getElementById('panelText').classList.toggle('active', which==='text');
-  document.getElementById('panelPhoto').classList.toggle('active', which==='photo');
-}
-
-function scanText(){
-  const raw = document.getElementById('input').value.trim();
-  const resultDiv = document.getElementById('result');
-  if(!raw){
-    resultDiv.innerHTML = `<div class="summary"><p class="ok">Tempelkan atau proses komposisi terlebih dahulu.</p></div>`;
-    return;
-  }
-  const lower = raw.toLowerCase();
-  const found = [];
-  CATEGORIES.forEach(cat=>{
-    const matchedWords = cat.words.filter(w => lower.includes(w));
-    if(matchedWords.length){ found.push({...cat, matched: [...new Set(matchedWords)]}); }
-  });
-
-  let highlighted = escapeHtml(raw);
-  const allWords = [];
-  found.forEach(cat=> cat.matched.forEach(w=> allWords.push({word:w, color:cat.color})));
-  allWords.sort((a,b)=> b.word.length - a.word.length);
-  allWords.forEach(({word,color})=>{
-    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp('('+escapedWord+')', 'gi');
-    highlighted = highlighted.replace(re, m => `<mark style="background:${color}">${m}</mark>`);
-  });
-
-  let html = '';
-  if(found.length === 0){
-    html += `<div class="summary"><h2>Hasil Pemindaian</h2><p class="ok">✅ Tidak terdeteksi kata kunci alergen atau bahan buatan umum dari daftar kami.</p></div>`;
-  } else {
-    html += `<div class="summary"><h2>Terdeteksi ${found.length} kategori bahan perlu perhatian</h2>`;
-    html += `<div class="chip-row">` + found.map(f=>`<span class="chip" style="background:${f.color}22;color:${f.color};border-color:${f.color}55">${f.label}</span>`).join("") + `</div>`;
-    html += `<ul class="warnlist">` + found.map(f=>`<li>⚠️ ${f.msg} <em>(terdeteksi: ${f.matched.join(", ")})</em></li>`).join("") + `</ul>`;
-    html += `</div>`;
-  }
-  html += `<div class="textbox"><strong>Teks komposisi (kata kunci disorot):</strong><br><br>${highlighted}</div>`;
-  resultDiv.innerHTML = html;
-}
-
-function clearAll(){
-  document.getElementById('input').value = '';
-  document.getElementById('result').innerHTML = '';
-}
-
-// ---------- Photo / OCR flow menggunakan Tesseract.js ----------
-let chosenFile = null;
-
-function triggerFileInput(){
-  document.getElementById('photoInput').click();
-}
-
-function onPhotoChosen(e){
-  const file = e.target.files && e.target.files[0];
-  const statusEl = document.getElementById('photoStatus');
-  statusEl.textContent = '';
-  if(!file){ return; }
-  chosenFile = file;
-
-  const preview = document.getElementById('preview');
-  const dropArea = document.getElementById('dropArea');
-  const previewWrap = document.getElementById('previewWrap');
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    preview.src = reader.result;
-    dropArea.style.display = 'none';
-    previewWrap.style.display = 'flex';
-  };
-  reader.onerror = ()=>{
-    statusEl.innerHTML = `<span class="errtext">Gagal membaca file gambar. Coba pilih foto lain.</span>`;
-  };
-  reader.readAsDataURL(file);
-  document.getElementById('btnProcessPhoto').disabled = false;
-}
-
-function resetPhoto(){
-  chosenFile = null;
-  const input = document.getElementById('photoInput');
-  input.value = '';
-  document.getElementById('preview').src = '';
-  document.getElementById('previewWrap').style.display = 'none';
-  document.getElementById('dropArea').style.display = 'block';
-  document.getElementById('btnProcessPhoto').disabled = true;
-  document.getElementById('photoStatus').textContent = '';
-}
-
-async function processPhoto(){
-  const statusEl = document.getElementById('photoStatus');
-  const btn = document.getElementById('btnProcessPhoto');
-  if(!chosenFile){ statusEl.textContent = 'Pilih foto terlebih dahulu.'; return; }
-
-  btn.disabled = true;
-  statusEl.innerHTML = 'Membaca teks dari foto (mungkin butuh beberapa detik)...';
-
-  try {
-    // Menjalankan OCR dengan Tesseract.js (Bahasa Indonesia & Inggris)
-    const result = await Tesseract.recognize(
-      chosenFile,
-      'ind+eng', 
-      {
-        logger: m => {
-          if (m.status === 'recognizing text') {
-            statusEl.innerHTML = `Membaca teks... ${Math.round(m.progress * 100)}% selesai.`;
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AcakFilm - Random Movie & Search</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        
+        /* Glassmorphism Styles */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-      }
-    );
+        
+        /* Background Overlays */
+        .radial-overlay {
+            background: radial-gradient(circle at center, rgba(2, 6, 23, 0.5) 0%, rgba(2, 6, 23, 1) 100%);
+        }
 
-    const extractedText = result.data.text.trim();
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-    if (!extractedText) {
-      statusEl.innerHTML = `<span class="errtext">Teks tidak terbaca. Pastikan foto terang dan fokus pada bagian komposisi.</span>`;
-      btn.disabled = false;
-      return;
-    }
+        /* Infinite Scroll Animations for Background */
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        @keyframes scroll-right {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+        .animate-scroll-left { animation: scroll-left 50s linear infinite; }
+        .animate-scroll-right { animation: scroll-right 50s linear infinite; }
+        #bg-grid { transform: rotate(-12deg) scale(1.3); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col relative overflow-x-hidden selection:bg-rose-500 selection:text-white justify-center items-center">
 
-    statusEl.innerHTML = `<span class="ok">✅ Foto berhasil dibaca! Mengalihkan ke hasil...</span>`;
+    <!-- Netflix-Style Dynamic Background -->
+    <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center bg-slate-950">
+        <div id="bg-grid" class="flex flex-col gap-4 min-w-[200vw]">
+            <!-- Poster rows will be injected here via JS -->
+        </div>
+    </div>
+    <div class="fixed inset-0 z-0 radial-overlay pointer-events-none"></div>
 
-    // Masukkan teks ke area input
-    document.getElementById('input').value = extractedText;
-    
-    // Pindah ke tab teks dan pindai otomatis
-    switchTab('text');
-    scanText();
+    <!-- Main Content Area -->
+    <main class="relative z-10 flex flex-col items-center w-full max-w-5xl mx-auto px-4 py-8">
+        
+        <!-- 1. HOME VIEW (Main Menu) -->
+        <div id="home-view" class="w-full text-center transition-all duration-500">
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight leading-tight">Acak<span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500 drop-shadow-lg">Film</span></h1>
+            <p class="text-slate-300 text-sm md:text-base max-w-lg mx-auto mb-10 font-medium">Bingung mau nonton apa hari ini? Daripada habis waktu cuma buat scroll katalog, biarkan kami pilihkan film seru buatmu dalam sekali klik!</p>
+            
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
+                <button id="instant-btn" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold shadow-xl shadow-rose-600/30 hover:-translate-y-1 transition-transform flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    <span>Acak Instan</span>
+                </button>
+                <button id="custom-btn" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold border border-slate-700 shadow-xl hover:-translate-y-1 transition-transform flex items-center justify-center space-x-2 backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                    <span>Filter Detail</span>
+                </button>
+                <button id="search-menu-btn" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold border border-slate-700 shadow-xl hover:-translate-y-1 transition-transform flex items-center justify-center space-x-2 backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <span>Cari Judul</span>
+                </button>
+                <button id="saved-menu-btn" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold border border-slate-700 shadow-xl hover:-translate-y-1 transition-transform flex items-center justify-center space-x-2 backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                    <span>Film Disimpan</span>
+                </button>
+            </div>
+        </div>
 
-  } catch (error) {
-    console.error(error);
-    statusEl.innerHTML = `<span class="errtext">Gagal memproses foto. Pastikan ada koneksi internet.</span>`;
-  } finally {
-    btn.disabled = false;
-  }
-}
-</script>
+        <!-- 2. SEARCH VIEW -->
+        <div id="search-view" class="w-full max-w-2xl glass-card p-6 md:p-8 rounded-3xl hidden opacity-0 translate-y-4 transition-all duration-500 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-center border-b border-slate-700 pb-4">Cari Film Spesifik</h2>
+            <form id="search-form" class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="search-input" placeholder="Masukkan judul film (mis: Inception)..." required class="flex-grow bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-5 py-3.5 focus:outline-none focus:border-blue-500 shadow-inner">
+                <button type="submit" class="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition flex justify-center items-center gap-2 shadow-lg shadow-blue-600/30">
+                    Cari!
+                </button>
+            </form>
+            <div class="mt-6 flex justify-center">
+                <button type="button" class="back-to-home-btn text-sm text-slate-400 hover:text-white transition underline">Batal & Kembali</button>
+            </div>
+        </div>
+
+        <!-- 3. SEARCH RESULTS GRID -->
+        <div id="search-results-view" class="w-full max-w-5xl glass-card p-6 rounded-3xl hidden opacity-0 transition-opacity duration-500 shadow-2xl">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-700/50 pb-4">
+                <h3 class="text-xl font-bold">Hasil Pencarian</h3>
+                <button class="back-to-home-btn text-sm px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition">Tutup</button>
+            </div>
+            <div id="results-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Hasil pencarian akan muncul di sini -->
+            </div>
+        </div>
+
+        <!-- 4. SAVED MOVIES VIEW -->
+        <div id="saved-view" class="w-full max-w-5xl glass-card p-6 rounded-3xl hidden opacity-0 transition-opacity duration-500 shadow-2xl">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-700/50 pb-4">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                    Film Favorit Anda
+                </h3>
+                <button class="back-to-home-btn text-sm px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition">Tutup</button>
+            </div>
+            <div id="empty-saved-msg" class="text-slate-400 text-center py-10 hidden">
+                Belum ada film yang disimpan. Cari atau acak film, lalu klik tombol "Simpan".
+            </div>
+            <div id="saved-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Film yang disimpan akan muncul di sini -->
+            </div>
+        </div>
+
+        <!-- 5. FILTER VIEW -->
+        <div id="filter-view" class="w-full max-w-4xl glass-card p-6 md:p-8 rounded-3xl hidden opacity-0 translate-y-4 transition-all duration-500 shadow-2xl max-h-[88vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center border-b border-slate-700/50 pb-4 mb-6">
+                <h2 class="text-2xl font-bold">Tentukan Kriteria Film</h2>
+                <button type="button" id="reset-filter-btn" class="text-xs text-rose-400 hover:text-rose-300 underline font-medium">Reset Filter</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                <!-- 1. Genre -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">1. Genre Film</label>
+                    <select id="genre-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                        <option value="">Semua Genre</option>
+                        <option value="28">Aksi</option>
+                        <option value="12">Petualangan</option>
+                        <option value="16">Animasi</option>
+                        <option value="35">Komedi</option>
+                        <option value="80">Kriminal</option>
+                        <option value="99">Dokumenter</option>
+                        <option value="18">Drama</option>
+                        <option value="10751">Keluarga</option>
+                        <option value="14">Fantasi</option>
+                        <option value="27">Horor</option>
+                        <option value="9648">Misteri</option>
+                        <option value="10749">Romantis</option>
+                        <option value="878">Fiksi Ilmiah (Sci-Fi)</option>
+                        <option value="53">Thriller</option>
+                    </select>
+                </div>
+
+                <!-- 2. Asal Negara -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">2. Asal Negara</label>
+                    <select id="region-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                        <option value="">Seluruh Dunia</option>
+                        <option value="US">Amerika Serikat (US)</option>
+                        <option value="ID">Indonesia (ID)</option>
+                        <option value="KR">Korea Selatan (KR)</option>
+                        <option value="JP">Jepang (JP)</option>
+                        <option value="GB">Inggris (UK)</option>
+                        <option value="TH">Thailand (TH)</option>
+                    </select>
+                </div>
+
+                <!-- 3. Rating IMDb/TMDB -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">3. Min. Rating</label>
+                        <input type="number" id="min-rating" min="0" max="10" step="0.1" placeholder="Mis: 6.5" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Max. Rating</label>
+                        <input type="number" id="max-rating" min="0" max="10" step="0.1" placeholder="Mis: 10" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                    </div>
+                </div>
+
+                <!-- 4. Tahun Rilis -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">4. Min. Tahun</label>
+                        <input type="number" id="min-year" min="1900" max="2026" placeholder="Mis: 2010" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Max. Tahun</label>
+                        <input type="number" id="max-year" min="1900" max="2026" placeholder="Mis: 2026" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                    </div>
+                </div>
+
+                <!-- 5. Durasi Film (Baru) -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">5. Min. Durasi (Menit)</label>
+                        <input type="number" id="min-duration" min="1" max="500" placeholder="Mis: 90" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Max. Durasi (Menit)</label>
+                        <input type="number" id="max-duration" min="1" max="500" placeholder="Mis: 150" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                    </div>
+                </div>
+
+                <!-- 6. Rating Usia Film (Baru) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">6. Rating Usia Film</label>
+                    <select id="age-rating-select" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500">
+                        <option value="">Semua Usia</option>
+                        <option value="G">G (Semua Umur)</option>
+                        <option value="PG">PG (Bimbingan Orang Tua)</option>
+                        <option value="PG-13">PG-13 (Remaja 13+)</option>
+                        <option value="R">R (Dewasa 17+)</option>
+                        <option value="NC-17">NC-17 (Khusus Dewasa 21+)</option>
+                    </select>
+                </div>
+
+                <!-- 7. Multi-Platform Streaming (Baru) -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
+                        7. Platform Streaming <span class="text-slate-500 normal-case font-normal">(Bisa pilih lebih dari satu, kosongkan untuk semua)</span>
+                    </label>
+                    <div id="platform-checkboxes" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="8" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Netflix
+                            </div>
+                        </label>
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="337" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Disney+ Hotstar
+                            </div>
+                        </label>
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="119" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Prime Video
+                            </div>
+                        </label>
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="350" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Apple TV+
+                            </div>
+                        </label>
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="489" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Vidio
+                            </div>
+                        </label>
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="158" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Viu
+                            </div>
+                        </label>
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="1899" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Max / HBO
+                            </div>
+                        </label>
+                        <label class="cursor-pointer select-none">
+                            <input type="checkbox" value="3" class="peer sr-only provider-cb">
+                            <div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold text-center peer-checked:bg-rose-600/20 peer-checked:border-rose-500 peer-checked:text-rose-300 hover:bg-slate-800 transition">
+                                Google Play
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-slate-700/50">
+                <button class="back-to-home-btn w-full sm:w-1/3 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition text-sm">Kembali</button>
+                <button id="generate-btn" class="w-full sm:w-2/3 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold transition shadow-lg shadow-rose-600/30">
+                    Terapkan Filter & Acak!
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. MOVIE DETAILS CARD -->
+        <div id="movie-card" class="w-full max-w-4xl glass-card rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 opacity-0 transform translate-y-6 hidden">
+            <div class="flex flex-col md:flex-row max-h-max">
+                <!-- Poster -->
+                <div class="md:w-2/5 relative bg-slate-900 flex items-center justify-center min-h-[400px]">
+                    <img id="movie-poster" src="" alt="Poster Film" class="w-full h-full object-cover absolute inset-0">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent md:bg-gradient-to-r md:from-transparent md:via-slate-900/60 md:to-slate-900"></div>
+                </div>
+                <!-- Details -->
+                <div class="md:w-3/5 p-6 md:p-8 flex flex-col justify-between relative z-10 bg-slate-900/40 md:bg-transparent">
+                    <div>
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span id="movie-release" class="text-xs font-semibold px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 shadow-inner"></span>
+                                <span id="movie-runtime" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hidden"></span>
+                            </div>
+                            <div class="flex items-center space-x-1 text-amber-400 font-semibold text-sm bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
+                                <span>⭐</span>
+                                <span id="movie-rating">0.0</span>
+                            </div>
+                        </div>
+
+                        <h2 id="title" class="text-3xl md:text-4xl font-bold mb-3 text-white leading-tight drop-shadow-md">Judul Film</h2>
+                        
+                        <!-- Genre Tags -->
+                        <div id="movie-genres" class="flex flex-wrap gap-2 mb-4"></div>
+
+                        <!-- Streaming Providers Container -->
+                        <div id="movie-providers-container" class="mb-5 hidden transition-opacity duration-300">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Tersedia di Platform (Klik untuk menonton):</span>
+                            <div id="providers-list" class="flex flex-wrap gap-2">
+                                <!-- Logo Platform akan muncul di sini via JS -->
+                            </div>
+                        </div>
+
+                        <div class="max-h-[25vh] overflow-y-auto pr-2 mb-4 custom-scrollbar">
+                            <p id="movie-overview" class="text-slate-200 text-sm md:text-base leading-relaxed text-justify drop-shadow-sm transition-opacity duration-300">Memuat sinopsis...</p>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Buttons -->
+                    <div class="pt-5 mt-2 border-t border-slate-700/50 flex flex-wrap justify-end gap-3">
+                        <button id="save-movie-btn" class="px-4 py-3 rounded-xl border border-emerald-500/50 hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium transition flex items-center gap-2 backdrop-blur-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                            <span id="save-btn-text">Simpan</span>
+                        </button>
+                        <button id="card-back-btn" class="px-5 py-3 rounded-xl border border-slate-600 hover:bg-slate-800 text-slate-200 text-sm font-medium transition text-center backdrop-blur-md">
+                            Kembali
+                        </button>
+                        <button id="card-action-btn" class="px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white text-sm font-bold transition flex items-center justify-center space-x-2 shadow-lg shadow-rose-600/30">
+                            <span>Acak Lagi</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. LOADING SPINNER -->
+        <div id="loading-state" class="hidden flex-col items-center justify-center py-20 w-full">
+            <div class="relative w-16 h-16">
+                <div class="absolute inset-0 rounded-full border-4 border-slate-800"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-rose-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p class="text-slate-300 text-sm animate-pulse mt-5 font-medium tracking-wide">Memuat data...</p>
+        </div>
+
+    </main>
+
+    <!-- Custom Toast Notification -->
+    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-rose-600 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none hidden font-medium text-sm">
+        Pesan Notifikasi
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        const API_KEY = '5005149e8856b76dadbe2e83298afe36';
+
+        const genreMap = {
+            28: 'Aksi', 12: 'Petualangan', 16: 'Animasi', 35: 'Komedi',
+            80: 'Kriminal', 99: 'Dokumenter', 18: 'Drama', 10751: 'Keluarga',
+            14: 'Fantasi', 36: 'Sejarah', 27: 'Horor', 10402: 'Musik',
+            9648: 'Misteri', 10749: 'Romantis', 878: 'Sci-Fi', 53: 'Thriller'
+        };
+
+        // DOM Elements & State
+        const views = {
+            home: document.getElementById('home-view'),
+            filter: document.getElementById('filter-view'),
+            search: document.getElementById('search-view'),
+            results: document.getElementById('search-results-view'),
+            saved: document.getElementById('saved-view'),
+            card: document.getElementById('movie-card'),
+            loading: document.getElementById('loading-state')
+        };
+        
+        let currentMode = 'home'; 
+        let currentDisplayedMovie = null;
+        let savedMovies = JSON.parse(localStorage.getItem('acakfilm_saved')) || [];
+
+        function showToast(message, isSuccess = false) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.className = `fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 text-white px-6 py-3 rounded-full shadow-2xl transition-opacity duration-300 font-medium text-sm ${isSuccess ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.remove('opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        function switchView(viewName) {
+            Object.values(views).forEach(v => {
+                v.classList.remove('opacity-100', 'translate-y-0');
+                v.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => v.classList.add('hidden'), 300);
+            });
+
+            setTimeout(() => {
+                views[viewName].classList.remove('hidden');
+                setTimeout(() => {
+                    views[viewName].classList.remove('opacity-0', 'translate-y-4');
+                    views[viewName].classList.add('opacity-100', 'translate-y-0');
+                }, 50);
+            }, 300);
+        }
+
+        async function initBackground() {
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`);
+                const data = await res.json();
+                const container = document.getElementById('bg-grid');
+                
+                for(let i=0; i<4; i++) {
+                    const row = document.createElement('div');
+                    row.className = `flex gap-4 mb-4 ${i % 2 === 0 ? 'animate-scroll-left' : 'animate-scroll-right'} w-max`;
+                    
+                    const shuffled = [...data.results].sort(() => 0.5 - Math.random());
+                    const duplicated = [...shuffled, ...shuffled, ...shuffled]; 
+                    
+                    duplicated.forEach(m => {
+                        if(m.poster_path) {
+                            const img = document.createElement('img');
+                            img.src = `https://image.tmdb.org/t/p/w200${m.poster_path}`;
+                            img.className = "w-32 md:w-44 rounded-xl opacity-30 shadow-2xl";
+                            row.appendChild(img);
+                        }
+                    });
+                    container.appendChild(row);
+                }
+            } catch (e) { console.log("Gagal memuat background"); }
+        }
+        initBackground();
+
+        // --- Reset Filter ---
+        document.getElementById('reset-filter-btn').addEventListener('click', () => {
+            document.getElementById('genre-select').value = '';
+            document.getElementById('region-select').value = '';
+            document.getElementById('min-rating').value = '';
+            document.getElementById('max-rating').value = '';
+            document.getElementById('min-year').value = '';
+            document.getElementById('max-year').value = '';
+            document.getElementById('min-duration').value = '';
+            document.getElementById('max-duration').value = '';
+            document.getElementById('age-rating-select').value = '';
+            document.querySelectorAll('.provider-cb').forEach(cb => cb.checked = false);
+            showToast('Semua filter direset', true);
+        });
+
+        // --- Save Feature Logic ---
+        function updateSaveBtnState() {
+            const isSaved = savedMovies.some(m => m.id === currentDisplayedMovie.id);
+            const btn = document.getElementById('save-movie-btn');
+            const text = document.getElementById('save-btn-text');
+            
+            if (isSaved) {
+                btn.classList.replace('border-emerald-500/50', 'bg-emerald-600');
+                btn.classList.replace('text-emerald-400', 'text-white');
+                text.innerText = 'Tersimpan';
+            } else {
+                btn.classList.replace('bg-emerald-600', 'border-emerald-500/50');
+                btn.classList.replace('text-white', 'text-emerald-400');
+                text.innerText = 'Simpan';
+            }
+        }
+
+        document.getElementById('save-movie-btn').addEventListener('click', () => {
+            if(!currentDisplayedMovie) return;
+            
+            const index = savedMovies.findIndex(m => m.id === currentDisplayedMovie.id);
+            if (index > -1) {
+                savedMovies.splice(index, 1);
+                showToast('Dihapus dari daftar simpanan');
+            } else {
+                savedMovies.push(currentDisplayedMovie);
+                showToast('Film berhasil disimpan!', true);
+            }
+            
+            localStorage.setItem('acakfilm_saved', JSON.stringify(savedMovies));
+            updateSaveBtnState();
+            renderSavedMovies(); 
+        });
+
+        function renderSavedMovies() {
+            const grid = document.getElementById('saved-grid');
+            const emptyMsg = document.getElementById('empty-saved-msg');
+            grid.innerHTML = '';
+            
+            if (savedMovies.length === 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+                
+                [...savedMovies].reverse().forEach(movie => {
+                    const div = document.createElement('div');
+                    div.className = "cursor-pointer transform hover:scale-105 transition duration-300 relative group rounded-xl overflow-hidden shadow-lg bg-slate-800";
+                    
+                    const posterSrc = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://via.placeholder.com/200x300/0f172a/94a3b8?text=No+Poster';
+                    
+                    div.innerHTML = `
+                        <img src="${posterSrc}" class="w-full h-auto object-cover min-h-[150px]">
+                        <div class="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition p-2 text-center text-xs font-bold leading-tight">${movie.title || movie.name}</div>
+                    `;
+                    div.onclick = () => {
+                        currentMode = 'saved';
+                        document.getElementById('card-action-btn').style.display = 'none';
+                        displayMovie(movie);
+                    };
+                    grid.appendChild(div);
+                });
+            }
+        }
+
+        // --- Pemetaan URL Langsung ke Platform Streaming ---
+        function getProviderUrl(providerName, movieTitle, fallbackLink) {
+            const q = encodeURIComponent(movieTitle);
+            const name = providerName.toLowerCase();
+
+            if (name.includes('netflix')) return `https://www.netflix.com/search?q=${q}`;
+            if (name.includes('disney')) return `https://www.hotstar.com/id/explore?search_query=${q}`;
+            if (name.includes('amazon') || name.includes('prime video')) return `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${q}`;
+            if (name.includes('apple tv')) return `https://tv.apple.com/search?term=${q}`;
+            if (name.includes('google play')) return `https://play.google.com/store/search?q=${q}&c=movies`;
+            if (name.includes('youtube tv')) return `https://tv.youtube.com/search/${q}`;
+            if (name.includes('youtube')) return `https://www.youtube.com/results?search_query=${q}+full+movie`;
+            if (name.includes('vidio')) return `https://www.vidio.com/search?q=${q}`;
+            if (name.includes('viu')) return `https://www.viu.com/ott/id/id/search?keyword=${q}`;
+            if (name.includes('wetv')) return `https://wetv.vip/id/search?q=${q}`;
+            if (name.includes('iqiyi')) return `https://www.iq.com/search?query=${q}`;
+            if (name.includes('catchplay')) return `https://www.catchplay.com/id/search?q=${q}`;
+            if (name.includes('hbo') || name.includes('max')) return `https://play.max.com/search?q=${q}`;
+            if (name.includes('hulu')) return `https://www.hulu.com/search?q=${q}`;
+            if (name.includes('peacock')) return `https://www.peacocktv.com/watch/search?q=${q}`;
+            if (name.includes('paramount')) return `https://www.paramountplus.com/search/?query=${q}`;
+            if (name.includes('crunchyroll')) return `https://www.crunchyroll.com/search?q=${q}`;
+            if (name.includes('fubo')) return `https://www.fubo.tv/welcome`;
+            if (name.includes('tubi')) return `https://tubitv.com/search/${q}`;
+            if (name.includes('pluto')) return `https://pluto.tv/search/details/movies/${q}`;
+
+            return fallbackLink || `https://www.google.com/search?q=nonton+${q}+di+${encodeURIComponent(providerName)}`;
+        }
+
+        // --- Fungsi Cek Platform Streaming ---
+        async function fetchWatchProviders(movieId) {
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=${API_KEY}`);
+                const data = await res.json();
+                
+                const regionData = data.results?.ID || data.results?.US;
+                
+                if (regionData) {
+                    let providers = [];
+                    if (regionData.flatrate) providers = [...providers, ...regionData.flatrate];
+                    if (regionData.rent) providers = [...providers, ...regionData.rent];
+                    if (regionData.buy) providers = [...providers, ...regionData.buy];
+                    
+                    const uniqueProviders = Array.from(new Set(providers.map(p => p.provider_id)))
+                        .map(id => providers.find(p => p.provider_id === id));
+                        
+                    return {
+                        providers: uniqueProviders,
+                        tmdbLink: regionData.link
+                    };
+                }
+                return { providers: [], tmdbLink: null };
+            } catch (error) {
+                console.error('Gagal mengambil data platform:', error);
+                return { providers: [], tmdbLink: null };
+            }
+        }
+
+        // --- Ambil Detail Durasi Film ---
+        async function fetchMovieRuntime(movieId) {
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}`);
+                const data = await res.json();
+                return data.runtime || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // --- Fungsi Auto-Translate Google ---
+        async function translateToIndonesian(text) {
+            if (!text) return 'Sinopsis tidak tersedia.';
+            try {
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=id&dt=t&q=${encodeURIComponent(text)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                return data[0].map(item => item[0]).join('');
+            } catch (error) {
+                return text; 
+            }
+        }
+
+        // --- Tampilkan Film di Card ---
+        async function displayMovie(movie) {
+            currentDisplayedMovie = movie; 
+            updateSaveBtnState(); 
+
+            const movieTitle = movie.title || movie.name;
+            document.getElementById('title').innerText = movieTitle;
+            document.getElementById('movie-release').innerText = movie.release_date ? movie.release_date.split('-')[0] : '-';
+            document.getElementById('movie-rating').innerText = movie.vote_average ? movie.vote_average.toFixed(1) : '0.0';
+
+            // Reset & Fetch Durasi
+            const runtimeEl = document.getElementById('movie-runtime');
+            runtimeEl.classList.add('hidden');
+            fetchMovieRuntime(movie.id).then(runtime => {
+                if (runtime && runtime > 0) {
+                    const hours = Math.floor(runtime / 60);
+                    const mins = runtime % 60;
+                    runtimeEl.innerText = hours > 0 ? `⏱ ${hours}j ${mins}m` : `⏱ ${mins}m`;
+                    runtimeEl.classList.remove('hidden');
+                }
+            });
+
+            const posterImg = document.getElementById('movie-poster');
+            posterImg.src = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750/0f172a/94a3b8?text=No+Poster';
+
+            const genresContainer = document.getElementById('movie-genres');
+            genresContainer.innerHTML = '';
+            if (movie.genre_ids) {
+                movie.genre_ids.forEach(id => {
+                    if (genreMap[id]) {
+                        const b = document.createElement('span');
+                        b.className = 'text-[11px] font-semibold px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700/60 uppercase shadow-inner';
+                        b.innerText = genreMap[id];
+                        genresContainer.appendChild(b);
+                    }
+                });
+            }
+            
+            // --- Reset & Fetch Providers ---
+            const providersContainer = document.getElementById('movie-providers-container');
+            const providersList = document.getElementById('providers-list');
+            providersContainer.classList.add('hidden');
+            providersList.innerHTML = '';
+            
+            fetchWatchProviders(movie.id).then(({ providers, tmdbLink }) => {
+                if (providers && providers.length > 0) {
+                    providersContainer.classList.remove('hidden');
+                    providers.forEach(p => {
+                        const link = document.createElement('a');
+                        link.href = getProviderUrl(p.provider_name, movieTitle, tmdbLink);
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                        link.title = `Tonton di ${p.provider_name}`;
+                        link.className = "inline-block rounded-lg overflow-hidden shadow-md border border-slate-700/50 hover:scale-110 hover:border-rose-500 transition-all cursor-pointer";
+
+                        const img = document.createElement('img');
+                        img.src = `https://image.tmdb.org/t/p/w45${p.logo_path}`;
+                        img.alt = p.provider_name;
+                        img.className = "w-9 h-9 object-cover block";
+
+                        link.appendChild(img);
+                        providersList.appendChild(link);
+                    });
+                }
+            });
+
+            // Tampilkan card terlebih dahulu
+            switchView('card');
+
+            // Proses penerjemahan secara asynchronous
+            const overviewEl = document.getElementById('movie-overview');
+            if (movie.overview) {
+                overviewEl.innerText = "Sedang menerjemahkan sinopsis ke bahasa Indonesia...";
+                overviewEl.classList.add('text-slate-400', 'animate-pulse'); 
+                
+                const translatedOverview = await translateToIndonesian(movie.overview);
+                
+                overviewEl.classList.remove('text-slate-400', 'animate-pulse');
+                overviewEl.innerText = translatedOverview;
+            } else {
+                overviewEl.innerText = 'Sinopsis tidak tersedia untuk film ini.';
+            }
+        }
+
+        // --- Fetch Random Movie Logic ---
+        async function fetchRandomMovie(isInstant = false) {
+            currentMode = isInstant ? 'instant' : 'filter';
+            switchView('loading');
+            document.getElementById('card-action-btn').style.display = 'flex';
+
+            try {
+                let query = '';
+                if (!isInstant) {
+                    const genre = document.getElementById('genre-select').value;
+                    const region = document.getElementById('region-select').value;
+                    const minR = document.getElementById('min-rating').value;
+                    const maxR = document.getElementById('max-rating').value;
+                    const minY = document.getElementById('min-year').value;
+                    const maxY = document.getElementById('max-year').value;
+                    const minD = document.getElementById('min-duration').value;
+                    const maxD = document.getElementById('max-duration').value;
+                    const ageRating = document.getElementById('age-rating-select').value;
+                    
+                    // Ambil semua platform yang dicentang (digabung dengan '|' sebagai logika ATAU)
+                    const selectedProviders = Array.from(document.querySelectorAll('.provider-cb:checked'))
+                        .map(cb => cb.value);
+
+                    if (genre) query += `&with_genres=${genre}`;
+                    if (region) query += `&with_origin_country=${region}`;
+                    if (minR) query += `&vote_average.gte=${minR}`;
+                    if (maxR) query += `&vote_average.lte=${maxR}`;
+                    if (minY) query += `&primary_release_date.gte=${minY}-01-01`;
+                    if (maxY) query += `&primary_release_date.lte=${maxY}-12-31`;
+                    if (minD) query += `&with_runtime.gte=${minD}`;
+                    if (maxD) query += `&with_runtime.lte=${maxD}`;
+                    if (ageRating) query += `&certification_country=US&certification=${encodeURIComponent(ageRating)}`;
+                    if (selectedProviders.length > 0) {
+                        query += `&watch_region=ID&with_watch_providers=${selectedProviders.join('|')}`;
+                    }
+                }
+                
+                const countRes = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=en-US&page=1&sort_by=popularity.desc${query}`);
+                const countData = await countRes.json();
+
+                if (!countData.results || countData.results.length === 0) {
+                    showToast('Tidak ada film yang cocok dengan kombinasi filter tersebut!');
+                    switchView(isInstant ? 'home' : 'filter');
+                    return;
+                }
+
+                const randomPage = Math.floor(Math.random() * Math.min(countData.total_pages, 500)) + 1;
+                const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=en-US&page=${randomPage}&sort_by=popularity.desc${query}`);
+                const data = await res.json();
+                
+                const randomMovie = data.results[Math.floor(Math.random() * data.results.length)];
+                
+                displayMovie(randomMovie);
+
+            } catch (error) {
+                showToast('Koneksi terputus. Silakan coba lagi.');
+                switchView('home');
+            }
+        }
+
+        // --- Search Logic ---
+        document.getElementById('search-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const q = document.getElementById('search-input').value;
+            if(!q) return;
+            
+            switchView('loading');
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(q)}&page=1`);
+                const data = await res.json();
+                
+                if (data.results.length === 0) {
+                    showToast('Judul film tidak ditemukan!');
+                    switchView('search');
+                    return;
+                }
+                
+                const grid = document.getElementById('results-grid');
+                grid.innerHTML = '';
+                
+                data.results.forEach(movie => {
+                    if(!movie.poster_path) return; 
+                    const div = document.createElement('div');
+                    div.className = "cursor-pointer transform hover:scale-105 transition duration-300 relative group rounded-xl overflow-hidden shadow-lg bg-slate-800";
+                    div.innerHTML = `
+                        <img src="https://image.tmdb.org/t/p/w200${movie.poster_path}" class="w-full h-auto object-cover min-h-[150px]">
+                        <div class="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition p-2 text-center text-xs font-bold leading-tight">${movie.title}</div>
+                    `;
+                    div.onclick = () => {
+                        currentMode = 'search';
+                        document.getElementById('card-action-btn').style.display = 'none';
+                        displayMovie(movie); 
+                    };
+                    grid.appendChild(div);
+                });
+                switchView('results');
+            } catch (error) {
+                showToast('Terjadi kesalahan pencarian.');
+                switchView('search');
+            }
+        });
+
+        // --- Event Listeners ---
+        document.getElementById('instant-btn').onclick = () => fetchRandomMovie(true);
+        document.getElementById('custom-btn').onclick = () => switchView('filter');
+        document.getElementById('search-menu-btn').onclick = () => switchView('search');
+        document.getElementById('generate-btn').onclick = () => fetchRandomMovie(false);
+        
+        document.getElementById('saved-menu-btn').onclick = () => {
+            renderSavedMovies();
+            switchView('saved');
+        };
+        
+        document.querySelectorAll('.back-to-home-btn').forEach(btn => {
+            btn.onclick = () => switchView('home');
+        });
+
+        document.getElementById('card-back-btn').onclick = () => {
+            if (currentMode === 'search') switchView('results');
+            else if (currentMode === 'saved') switchView('saved');
+            else if (currentMode === 'filter') switchView('filter');
+            else switchView('home');
+        };
+
+        document.getElementById('card-action-btn').onclick = () => {
+            fetchRandomMovie(currentMode === 'instant');
+        };
+
+    </script>
 </body>
 </html>
